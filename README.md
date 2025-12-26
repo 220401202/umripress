@@ -1,352 +1,240 @@
-# UMRI PRESS – System Documentation
+# Alur Proyek UMRI PRESS
 
-Dokumentasi ini menjelaskan arsitektur sistem, struktur modul, alur bisnis, dan mekanisme royalti pada aplikasi **UMRI PRESS**.  
-Dokumen ini ditujukan sebagai **referensi teknis utama**, termasuk untuk onboarding developer dan handover.
+**Path Proyek:**  
+`D:\UMRI PRESS\KP\httpdocs`
+
+Dokumen ini menjelaskan alur proyek secara detail dan terstruktur.
 
 ---
 
-## 1. Stack Teknologi & Struktur Dasar
+## 1. Stack & Struktur
 
-### Stack Utama
-- **Framework**: Laravel 11
-- **Frontend Interaktif**: Livewire (Volt)
-- **Asset Bundler**: Vite
-- **CSS Framework**: Tailwind CSS
+### Teknologi
+- **Framework:** Laravel 11
+- **Frontend:** Livewire (Volt), Vite, Tailwind CSS
 
 ### Entry Point
-- `public/index.php`  
-  Seluruh request HTTP masuk melalui file ini.
+- `index.php`
 
-### File Routing Utama
-- `routes/web.php` → Website publik & dashboard admin umum
-- `routes/auth.php` → Autentikasi
-- `routes/dashboard-surat.php` → Modul Dashboard Surat
-- `routes/author.php` → Dashboard Author (Penulis)
+### Routing Utama
+- `web.php`
+- `auth.php`
+- `dashboard-surat.php`
+- `author.php`
+
+### Alur Request Global
+1. Request masuk → `index.php`
+2. Laravel bootstrap → routing (`routes/*`)
+3. Middleware cek auth / role / permission
+4. Controller / Livewire menangani
+5. Model (Eloquent)
+6. View (Blade / Livewire)
 
 ---
 
-## 2. Alur Request Global
-
-### Alur Umum
-```text
-Request masuk
-→ index.php
-→ Laravel bootstrapping
-→ Routing (routes/*)
-→ Middleware (auth / role / permission)
-→ Controller atau Livewire Component
-→ Model (Eloquent)
-→ View (Blade / Livewire)
-Diagram Alur Request
-mermaid
-Salin kode
-flowchart LR
-A[Client Request] --> B[index.php]
-B --> C[Laravel Bootstrap]
-C --> D[Routing]
-D --> E[Middleware]
-E --> F[Controller / Livewire]
-F --> G[Eloquent Model]
-G --> H[View]
-3. Modul Publik (Website UMRI PRESS)
-Routing
-File: routes/web.php
-
-Controller utama: HomeController
-
-Endpoint Publik
-/
-
-/tentang-kami
-
-/team
-
-/harga
-
-/toko-buku
-
-/artikel
-
-dan halaman publik lainnya
-
-Fitur
-Home
-
-Artikel terbaru
-
-Pengaturan
-
-Sertifikat
-
-Detail Buku
-
-Data buku
-
-Relasi penulis
-
-Komentar pembaca
-
-Komentar Buku
-
-Disimpan dengan status pending approval
-
-Struktur File
-Controller:
-app/Http/Controllers/HomeController.php
-
-Views:
-resources/views/home/*
-
-Livewire Components:
-app/Livewire/Home/*
-
-4. Modul Dashboard Admin (Umum)
-Routing
-File: routes/web.php
-
-Middleware: auth
-
-Endpoint
-/dashboard → Halaman ringkasan
-
-Fitur
-Manajemen data:
-
-Buku
-
-Artikel
-
-Author
-
-Tim
-
-Harga paket
-
-Pembayaran
-
-Transaksi
-
-User
-
-Pengaturan
-
-Controller hanya bertugas menampilkan halaman.
-Seluruh operasi CRUD dilakukan menggunakan Livewire.
-
-Struktur File
-Controller:
-DashboardController.php
-
-Livewire CRUD:
-app/Livewire/Dashboard/*
-
-Views:
-
-resources/views/dashboard/*
-
-resources/views/livewire/dashboard/*
-
-Kustomisasi Royalti
-Input royalti per penulis per buku:
-
-Tambah.php
-
-EditBuku.php
-
-View buku:
-
-resources/views/livewire/dashboard/buku/*
-
-Tabel buku menampilkan royalti:
-
-semua-buku.blade.php
-
-5. Modul Dashboard Surat
-Routing
-File: routes/dashboard-surat.php
-
-Prefix: /dashboard-surat
-
-Middleware
-EnsureSuratAccess
-
-EnsureSuratPermission
-
-IsAdmin
-
-SetSuratIntendedRedirect
-
-Fitur
-Surat masuk & keluar
-
-Disposisi
-
-Template surat
-
-Notifikasi
-
-Audit log
-
-Pengaturan
-
-Struktur File
-Controller:
-app/Http/Controllers/Surat/*
-
-Views:
-resources/views/dashboard-surat/*
-
-6. Modul Dashboard Author (Royalti Penulis)
-Routing
-File: routes/author.php
-
-Prefix: /dashboard-author
-
-Middleware: auth, role.author
-
-Endpoint
-/dashboard-author
-
-/dashboard-author/sales
-
-/dashboard-author/payouts
-
-/dashboard-author/settings
-
-Controller
-AuthorDashboardController.php
-
-AuthorSalesController.php
-
-AuthorPayoutController.php
-
-AuthorSettingsController.php
-
-Views
-resources/views/author/*
-
-Layout: author.blade.php
-
-7. Modul Royalti (Perhitungan Otomatis)
-Trigger
-Saat status order berubah menjadi completed
-
-Mekanisme
-Observer
-DirectOrderObserver.php
-
-Action
-CalculateRoyaltyAction.php
-
-Fallback Manual
-
-DashboardController@updatePesanan
-
-Livewire Transaksi / Pesanan Langsung
-
-Output
-Tabel: royalty_transactions
-
-Default nilai:
-
-type = credit
-
-status = pending
-
-8. Modul Admin Royalti & Payout
-Admin Royalti
-Route: /dashboard/royalty
-
-Controller: RoyaltyTransactionController.php
-
-View: index.blade.php
-
-Status:
-
-pending
-
-approved
-
-paid
-
-Admin Payout
-Route: /dashboard/payouts
-
-Controller: PayoutRequestController.php
-
-View: index.blade.php
-
-Status:
-
-pending
-
-approved
-
-paid
-
-9. Database & Relasi Inti
-Tabel Utama
-users (user / editor / admin / author)
-
-authors (relasi ke users)
-
-buku
-
-author_buku (pivot + royalty_percentage)
-
-direct_orders
-
-royalty_transactions
-
-payout_requests
-
-Relasi
-User 1–1 Author
-
-Buku N–M Author
-
-DirectOrder → Buku
-
-RoyaltyTransaction → Author & DirectOrder
-
-PayoutRequest → Author
-
-10. Alur Royalti (Flow Bisnis)
-mermaid
-Salin kode
-flowchart TD
-A[Admin set royalti buku] --> B[Order completed]
-B --> C[Buat royalty_transactions]
-C --> D[Admin approve royalti]
-D --> E[Saldo author bertambah]
-E --> F[Author request payout]
-F --> G[Admin approve payout]
-11. Login & Autentikasi
-Login umum: /login
-
-Login author: /login-author
-
-Livewire Volt Auth:
-
-resources/views/livewire/pages/auth/*
-
-12. Catatan Teknis & Handover
-Semua CRUD dashboard menggunakan Livewire
-
-Sistem royalti berbasis event (observer)
-
-Hak akses dikontrol via middleware role & permission
-
-Struktur modular memudahkan scaling fitur
-
-13. Rekomendasi Pengembangan
-Tambahkan unit test untuk:
-
-Royalti calculation
-
-Payout approval
-
-Tambahkan logging untuk audit payout
-
-Optimasi query relasi buku–author
-
+## 2. Modul Publik (Website UMRI PRESS)
+
+### Routing
+- File: `web.php`
+- Controller: `HomeController`
+
+### Endpoint
+- `/` → `HomeController@index`
+- `/tentang-kami`
+- `/team`
+- `/harga`
+- `/toko-buku`
+- `/artikel`
+- dll
+
+### Fitur
+- Home: artikel terbaru, pengaturan, sertifikat
+- Detail buku: Buku + Authors + Comment
+- Komentar buku: POST ke Comment (status **pending approval**)
+
+### Struktur File
+- Controller: `HomeController.php`
+- Views: `resources/views/home/*`
+- Livewire Components: `app/Livewire/Home/*`
+
+---
+
+## 3. Modul Dashboard Admin (Umum)
+
+### Routing
+- File: `web.php`
+- Middleware: `auth`
+- Controller: `DashboardController`
+
+### Endpoint
+- `/dashboard` → ringkasan
+
+### Manajemen Data
+- Buku
+- Artikel
+- Authors
+- Tim
+- Harga paket
+- Pembayaran
+- Transaksi
+- Users
+- Pengaturan
+
+### Arsitektur
+- Controller hanya menyajikan halaman
+- CRUD dilakukan via Livewire
+
+### Struktur File
+- Livewire CRUD: `app/Livewire/Dashboard/*`
+- Views:
+  - `resources/views/dashboard/*`
+  - `resources/views/livewire/dashboard/*`
+
+### Perubahan Khusus (Royalti Buku)
+- Input royalti per penulis per buku:
+  - `Tambah.php`
+  - `EditBuku.php`
+- Lokasi:
+  - `resources/views/livewire/dashboard/buku/*`
+- Tabel buku menampilkan royalti:
+  - `semua-buku.blade.php`
+
+---
+
+## 4. Modul Dashboard Surat
+
+### Routing
+- File: `dashboard-surat.php`
+- Prefix: `dashboard-surat`
+
+### Middleware
+- `EnsureSuratAccess`
+- `EnsureSuratPermission`
+- `IsAdmin`
+- `SetSuratIntendedRedirect`
+
+### Controller
+- `app/Http/Controllers/Surat/*`
+
+### Fitur
+- Surat masuk / keluar
+- Disposisi
+- Template
+- Notifikasi
+- Audit log
+- Pengaturan
+
+### Views
+- `resources/views/dashboard-surat/*`
+
+---
+
+## 5. Modul Dashboard Author (Royalti Penulis)
+
+### Routing
+- File: `author.php`
+- Prefix: `dashboard-author`
+- Middleware: `auth`, `role.author`
+
+### Endpoint
+- `/dashboard-author` → ringkasan
+- `/dashboard-author/sales` → penjualan
+- `/dashboard-author/payouts` → pencairan
+- `/dashboard-author/settings` → rekening
+
+### Controller
+- `AuthorDashboardController.php`
+- `AuthorSalesController`
+- `AuthorPayoutController`
+- `AuthorSettingsController`
+
+### Views & Layout
+- Views: `resources/views/author/*`
+- Layout: `author.blade.php`
+
+---
+
+## 6. Modul Royalti (Perhitungan)
+
+### Trigger
+- Saat status order berubah menjadi **completed**
+
+### Mekanisme
+- Observer: `DirectOrderObserver.php`
+- Action: `CalculateRoyaltyAction.php`
+
+### Fallback (Manual)
+- `DashboardController@updatePesanan`
+- Livewire Dashboard:
+  - Transaksi
+  - PesananLangsung
+
+### Penyimpanan Data
+- Tabel: `royalty_transactions`
+- `type`: `credit`
+- `status`: `pending` (default awal)
+
+---
+
+## 7. Modul Admin Royalti & Payout
+
+### Admin Royalti
+- Route: `/dashboard/royalty`
+- Controller: `RoyaltyTransactionController.php`
+- View: `index.blade.php`
+- Status:
+  - `pending`
+  - `approved`
+  - `paid`
+
+### Admin Payout
+- Route: `/dashboard/payouts`
+- Controller: `PayoutRequestController.php`
+- View: `index.blade.php`
+- Status:
+  - `pending`
+  - `approved`
+  - `paid`
+
+---
+
+## 8. Database & Relasi Inti
+
+### Tabel Utama
+- `users` (role: user / editor / admin / author)
+- `authors` (relasi ke users via `user_id`)
+- `buku`
+- `author_buku` (pivot + royalty)
+- `direct_orders`
+- `royalty_transactions`
+- `payout_requests`
+
+### Relasi
+- User **1–1** Authors
+- Buku **many–many** Authors (via `author_buku` + `royalty_percentage`)
+- DirectOrder → Buku
+- RoyaltyTransaction → Authors + DirectOrder
+- PayoutRequest → Authors
+
+---
+
+## 9. Alur Royalti (Flow)
+
+1. Admin set persentase royalti di buku
+2. Order selesai (`completed`)
+3. Sistem membuat data di `royalty_transactions` (credit, pending)
+4. Admin approve di `/dashboard/royalty`
+5. Saldo penulis bertambah (approved / paid)
+6. Penulis request payout di `/dashboard-author/payouts`
+7. Admin approve payout di `/dashboard/payouts`
+
+---
+
+## 10. Login & Authentication
+
+- Login umum: `/login`
+- Login author khusus: `/login-author`
+- Auth (Volt Livewire):
+  - `resources/views/livewire/pages/auth/*`
+
+---
