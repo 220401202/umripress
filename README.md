@@ -1,265 +1,352 @@
-# Sistem Website Penerbitan & Penjualan Buku
+# UMRI PRESS – System Documentation
 
-Aplikasi ini adalah platform website penerbitan buku yang menyediakan halaman publik untuk informasi penerbit, artikel, dan buku, serta sistem transaksi pembelian buku dan dashboard admin untuk pengelolaan konten, transaksi, dan pengaturan sistem.
-
----
-
-## 1. Gambaran Umum Sistem
-
-Aplikasi terbagi menjadi beberapa bagian utama:
-
-1. Frontend Publik  
-2. Sistem Transaksi Pembelian Buku  
-3. Moderasi & Operasional  
-4. Dashboard Admin  
-5. Manajemen Data & Relasi  
-
-Teknologi utama yang digunakan:
-- Laravel
-- Livewire & Livewire Volt
-- Blade Template
-- MySQL / MariaDB
+Dokumentasi ini menjelaskan arsitektur sistem, struktur modul, alur bisnis, dan mekanisme royalti pada aplikasi **UMRI PRESS**.  
+Dokumen ini ditujukan sebagai **referensi teknis utama**, termasuk untuk onboarding developer dan handover.
 
 ---
 
-## 2. Autentikasi & Hak Akses
+## 1. Stack Teknologi & Struktur Dasar
 
-### 2.1 Autentikasi
-- Menggunakan Livewire Volt
-- Fitur yang tersedia:
-  - Login
-  - Forgot Password
-  - Reset Password
-  - Email Verification
-- Registrasi user publik dinonaktifkan
-- Akun admin dibuat melalui dashboard atau database seed
+### Stack Utama
+- **Framework**: Laravel 11
+- **Frontend Interaktif**: Livewire (Volt)
+- **Asset Bundler**: Vite
+- **CSS Framework**: Tailwind CSS
 
-### 2.2 Proteksi Akses
-- Semua route dashboard berada dalam middleware `auth`
-- Pengunjung publik hanya dapat:
-  - Melihat konten
-  - Mengirim komentar
-  - Melakukan pembelian buku
+### Entry Point
+- `public/index.php`  
+  Seluruh request HTTP masuk melalui file ini.
 
----
-
-## 3. Alur Publik (Frontend)
-
-### 3.1 Homepage (`/`)
-Menampilkan:
-- Banner utama
-- Sertifikat penerbit
-- Buku terbaru (Livewire)
-- Artikel terbaru
-- CTA kirim naskah
-
-Sumber data:
-- Pengaturan
-- Sertifikat
-- Buku
-- Artikel
+### File Routing Utama
+- `routes/web.php` → Website publik & dashboard admin umum
+- `routes/auth.php` → Autentikasi
+- `routes/dashboard-surat.php` → Modul Dashboard Surat
+- `routes/author.php` → Dashboard Author (Penulis)
 
 ---
 
-### 3.2 Halaman Informasi
-- Tentang
-- Tim (data dinamis dari database)
-- Kontak (data dari Pengaturan)
+## 2. Alur Request Global
 
----
+### Alur Umum
+```text
+Request masuk
+→ index.php
+→ Laravel bootstrapping
+→ Routing (routes/*)
+→ Middleware (auth / role / permission)
+→ Controller atau Livewire Component
+→ Model (Eloquent)
+→ View (Blade / Livewire)
+Diagram Alur Request
+mermaid
+Salin kode
+flowchart LR
+A[Client Request] --> B[index.php]
+B --> C[Laravel Bootstrap]
+C --> D[Routing]
+D --> E[Middleware]
+E --> F[Controller / Livewire]
+F --> G[Eloquent Model]
+G --> H[View]
+3. Modul Publik (Website UMRI PRESS)
+Routing
+File: routes/web.php
 
-### 3.3 Penulis & Pengiriman Naskah
-- Daftar Penulis: halaman informasi & CTA
-- Kirim Naskah:
-  - Link Google Form dari Pengaturan
-  - Download template dokumen penerbit
+Controller utama: HomeController
 
----
+Endpoint Publik
+/
 
-### 3.4 Progress ISBN
-- Embed Google Sheet
-- URL sheet disimpan di Pengaturan (`progress-isbn`)
+/tentang-kami
 
----
+/team
 
-### 3.5 Artikel
+/harga
 
-#### List Artikel (`/artikel`)
-- Livewire pagination
-- Hanya artikel dengan status `publish`
+/toko-buku
 
-#### Detail Artikel (`/artikel/{slug}`)
-- Menampilkan artikel publish
-- View counter otomatis bertambah
+/artikel
 
----
+dan halaman publik lainnya
 
-### 3.6 Toko Buku
+Fitur
+Home
 
-#### List Buku (`/toko-buku`)
-- Livewire list
-- Search dan sorting
-- Modal detail dan link marketplace
+Artikel terbaru
 
-#### Detail Buku (`/detail-buku/{slug}`)
-Menampilkan:
-- Informasi buku
-- Penulis
-- Kategori
-- Buku terkait
-- Komentar dan reply
-- Aksi pembelian buku
+Pengaturan
 
----
+Sertifikat
 
-## 4. Alur Pembelian Buku
+Detail Buku
 
-### 4.1 Syarat Pembelian via UMRI Press
-Tombol **Beli via UMRI Press** muncul jika:
-- `allow_umri_press_payment = true`
-- Buku bukan status `coming soon`
+Data buku
 
----
+Relasi penulis
 
-### 4.2 Proses Pembelian
-1. User membuka halaman detail buku
-2. Klik tombol **Beli via UMRI Press**
-3. Modal Livewire ditampilkan
-4. User mengisi:
-   - Nama
-   - Alamat
-   - Tipe buku (hardcopy / softcopy)
-   - Metode pembayaran
-   - Upload bukti pembayaran (opsional)
-5. Sistem:
-   - Menghitung harga dan diskon
-   - Menyimpan data ke tabel `direct_orders`
-   - Menghasilkan kode order
-   - Membuat link WhatsApp ke admin
-6. User diarahkan ke WhatsApp admin
+Komentar pembaca
 
----
+Komentar Buku
 
-### 4.3 Pengelolaan Transaksi oleh Admin
-- Admin melihat daftar pesanan
-- Admin dapat:
-  - Mengubah status pesanan
-  - Menambahkan catatan admin
-- Sistem berfungsi sebagai pencatatan dan tracking transaksi manual
+Disimpan dengan status pending approval
 
----
+Struktur File
+Controller:
+app/Http/Controllers/HomeController.php
 
-## 5. Komentar Buku & Moderasi
+Views:
+resources/views/home/*
 
-### 5.1 Komentar Publik
-- Pengunjung mengirim komentar atau reply
-- Data disimpan dengan status `is_approved = false`
+Livewire Components:
+app/Livewire/Home/*
 
-### 5.2 Moderasi Admin
-- Admin dapat:
-  - Menyetujui komentar
-  - Menghapus komentar
-- Hanya komentar yang disetujui yang tampil di halaman publik
+4. Modul Dashboard Admin (Umum)
+Routing
+File: routes/web.php
 
----
+Middleware: auth
 
-## 6. Dashboard Admin
+Endpoint
+/dashboard → Halaman ringkasan
 
-### 6.1 Dashboard Utama
-- Ringkasan statistik
-- Data terbaru (buku, artikel, transaksi)
+Fitur
+Manajemen data:
 
----
+Buku
 
-### 6.2 Manajemen Konten
-- Buku
-  - CRUD
-  - Soft delete
-  - Diskon
-  - Ebook
-  - Link marketplace
-  - Toggle hardcopy / softcopy
-  - Toggle pembayaran UMRI Press
-- Kategori Buku
-- Authors (foto & slug)
-- Artikel (draft / publish)
-- Tim
-- Sertifikat
-- Paket Penerbit
+Artikel
 
----
+Author
 
-### 6.3 Transaksi & Operasional
-- Metode Pembayaran
-- Pesanan Langsung
-  - Filter data
-  - Update status
-  - Catatan admin
-- Users Admin
-  - Tidak dapat menghapus akun sendiri
-  - Tidak dapat menghapus email utama
+Tim
 
----
+Harga paket
 
-### 6.4 Pengaturan Sistem
-Digunakan sebagai konfigurasi pusat frontend:
-- Logo
-- Template dokumen
-- File PDF
-- Link Google Form
-- Progress ISBN
-- Konfigurasi tampilan lainnya
+Pembayaran
 
----
+Transaksi
 
-## 7. Struktur Data & Relasi
+User
 
-### 7.1 Relasi Utama
-- Buku
-  - belongsTo Kategori
-  - many-to-many Authors
-  - hasMany Comment (approved only)
-- Artikel
-  - belongsTo KategoriArtikel
-  - belongsTo User
-- DirectOrder
-  - belongsTo Buku
-  - belongsTo PaymentMethod
+Pengaturan
 
----
+Controller hanya bertugas menampilkan halaman.
+Seluruh operasi CRUD dilakukan menggunakan Livewire.
 
-## 8. Alur Sistem End-to-End
+Struktur File
+Controller:
+DashboardController.php
 
-Alur utama sistem dari sisi pengguna hingga admin adalah sebagai berikut:
+Livewire CRUD:
+app/Livewire/Dashboard/*
 
-Pengunjung Publik  
-↓  
-Baca Konten / Pilih Buku  
-↓  
-Komentar / Pembelian  
-↓  
-Database (Pending / Draft)  
-↓  
-Dashboard Admin  
-↓  
-Moderasi & Update Status  
+Views:
 
----
+resources/views/dashboard/*
 
-## 9. Catatan Teknis Penting
+resources/views/livewire/dashboard/*
 
-### 9.1 Route Kategori Buku
-Saat ini route `/kategori` mengarah ke method controller yang belum tersedia dan berpotensi menyebabkan error.
+Kustomisasi Royalti
+Input royalti per penulis per buku:
 
-Rekomendasi:
-Gunakan route `/kategori/{slug}` dan implementasi method `kategoriBuku($slug)` untuk menampilkan buku berdasarkan kategori.
+Tambah.php
 
----
+EditBuku.php
 
-## 10. Catatan Akhir
-Dokumentasi ini dibuat untuk:
-- Handover project
-- Onboarding developer baru
-- Referensi pengembangan lanjutan
+View buku:
 
-Pastikan dokumentasi ini diperbarui jika terdapat perubahan struktur aplikasi atau alur bisnis.
+resources/views/livewire/dashboard/buku/*
+
+Tabel buku menampilkan royalti:
+
+semua-buku.blade.php
+
+5. Modul Dashboard Surat
+Routing
+File: routes/dashboard-surat.php
+
+Prefix: /dashboard-surat
+
+Middleware
+EnsureSuratAccess
+
+EnsureSuratPermission
+
+IsAdmin
+
+SetSuratIntendedRedirect
+
+Fitur
+Surat masuk & keluar
+
+Disposisi
+
+Template surat
+
+Notifikasi
+
+Audit log
+
+Pengaturan
+
+Struktur File
+Controller:
+app/Http/Controllers/Surat/*
+
+Views:
+resources/views/dashboard-surat/*
+
+6. Modul Dashboard Author (Royalti Penulis)
+Routing
+File: routes/author.php
+
+Prefix: /dashboard-author
+
+Middleware: auth, role.author
+
+Endpoint
+/dashboard-author
+
+/dashboard-author/sales
+
+/dashboard-author/payouts
+
+/dashboard-author/settings
+
+Controller
+AuthorDashboardController.php
+
+AuthorSalesController.php
+
+AuthorPayoutController.php
+
+AuthorSettingsController.php
+
+Views
+resources/views/author/*
+
+Layout: author.blade.php
+
+7. Modul Royalti (Perhitungan Otomatis)
+Trigger
+Saat status order berubah menjadi completed
+
+Mekanisme
+Observer
+DirectOrderObserver.php
+
+Action
+CalculateRoyaltyAction.php
+
+Fallback Manual
+
+DashboardController@updatePesanan
+
+Livewire Transaksi / Pesanan Langsung
+
+Output
+Tabel: royalty_transactions
+
+Default nilai:
+
+type = credit
+
+status = pending
+
+8. Modul Admin Royalti & Payout
+Admin Royalti
+Route: /dashboard/royalty
+
+Controller: RoyaltyTransactionController.php
+
+View: index.blade.php
+
+Status:
+
+pending
+
+approved
+
+paid
+
+Admin Payout
+Route: /dashboard/payouts
+
+Controller: PayoutRequestController.php
+
+View: index.blade.php
+
+Status:
+
+pending
+
+approved
+
+paid
+
+9. Database & Relasi Inti
+Tabel Utama
+users (user / editor / admin / author)
+
+authors (relasi ke users)
+
+buku
+
+author_buku (pivot + royalty_percentage)
+
+direct_orders
+
+royalty_transactions
+
+payout_requests
+
+Relasi
+User 1–1 Author
+
+Buku N–M Author
+
+DirectOrder → Buku
+
+RoyaltyTransaction → Author & DirectOrder
+
+PayoutRequest → Author
+
+10. Alur Royalti (Flow Bisnis)
+mermaid
+Salin kode
+flowchart TD
+A[Admin set royalti buku] --> B[Order completed]
+B --> C[Buat royalty_transactions]
+C --> D[Admin approve royalti]
+D --> E[Saldo author bertambah]
+E --> F[Author request payout]
+F --> G[Admin approve payout]
+11. Login & Autentikasi
+Login umum: /login
+
+Login author: /login-author
+
+Livewire Volt Auth:
+
+resources/views/livewire/pages/auth/*
+
+12. Catatan Teknis & Handover
+Semua CRUD dashboard menggunakan Livewire
+
+Sistem royalti berbasis event (observer)
+
+Hak akses dikontrol via middleware role & permission
+
+Struktur modular memudahkan scaling fitur
+
+13. Rekomendasi Pengembangan
+Tambahkan unit test untuk:
+
+Royalti calculation
+
+Payout approval
+
+Tambahkan logging untuk audit payout
+
+Optimasi query relasi buku–author
+
